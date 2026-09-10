@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Grammar (Học tiếng Anh siêu vui cùng Ms Linda)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd); 
+            user-select: none; 
+            font-family: 'Fredoka', sans-serif;
+        }
+        
+        #game-board {
+            position: relative;
+            width: 900px;
+            height: 600px;
+            margin: 20px auto;
+            background: linear-gradient(to bottom, #7dd3fc 0%, #e0f2fe 100%);
+            border: 5px solid #ffffff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            cursor: none; 
+        }
+
+        #plane {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            bottom: 15px;
+            z-index: 50;
+            pointer-events: none;
+            transition: left 0.05s ease-out;
+            font-size: 70px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 6px 6px rgba(0,0,0,0.3));
+        }
+
+        .chicken {
+            position: absolute;
+            width: 75px;
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 55px; 
+            z-index: 20;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+        }
+
+        .word-tag {
+            position: absolute;
+            top: -24px;
+            background-color: #ffffff;
+            color: #dc2626;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 3px 12px;
+            border-radius: 12px;
+            border: 2.5px solid #fca5a5;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            white-space: nowrap;
+        }
+
+        .bullet {
+            position: absolute;
+            width: 8px;
+            height: 25px;
+            background: linear-gradient(to top, #facc15, #ef4444);
+            border-radius: 10px;
+            transform: translateX(-50%);
+            z-index: 10;
+            box-shadow: 0 0 10px #ef4444;
+        }
+        
+        .feedback-text {
+            position: absolute;
+            font-size: 35px;
+            font-weight: 900;
+            z-index: 60;
+            animation: floatUp 1s forwards;
+            pointer-events: none;
+            text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.4); opacity: 0; }
+        }
+
+        .btn-hover {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn-hover:active {
+            transform: scale(0.95) translateY(2px);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen">
+
+    <div class="text-center mb-2">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 drop-shadow uppercase tracking-wide">English Grammar</h1>
+        <h2 class="text-lg md:text-xl font-bold text-sky-600">(Học tiếng Anh siêu vui cùng Ms Linda)</h2>
+    </div>
+
+    <div id="game-board">
+        
+        <!-- Màn hình nhập tên (Thiết kế bo tròn, trực quan) -->
+        <div id="name-screen" class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm flex flex-col items-center justify-center z-[110]">
+            <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-11/12 border-4 border-sky-300">
+                <div class="text-5xl mb-2">👋</div>
+                <h2 class="text-2xl font-black text-blue-700 mb-1">Chào con!</h2>
+                <p class="text-gray-500 font-semibold mb-4 text-sm">Nhập tên của con để vào phi đội nhé:</p>
+                <input type="text" id="player-name-input" placeholder="Tên của con..." 
+                    class="w-full text-center text-xl font-bold py-3 px-4 border-2 border-sky-200 rounded-2xl focus:outline-none focus:border-blue-500 mb-2 text-gray-700 bg-sky-50 shadow-inner"
+                    maxlength="15">
+                <div id="name-error" class="text-red-500 font-bold mb-3 hidden text-xs">⚠️ Con hãy nhập tên trước nhé!</div>
+                <button onclick="goToStartScreen()" class="w-full bg-amber-400 hover:bg-amber-500 text-blue-900 font-black py-3 rounded-2xl text-xl shadow-[0_5px_0_#b45309] btn-hover cursor-pointer">
+                    TIẾP TỤC 🚀
+                </button>
+            </div>
+        </div>
+
+        <!-- Màn hình bắt đầu game -->
+        <div id="start-screen" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex flex-col items-center justify-center z-[100] hidden">
+            <div class="bg-white/90 p-8 rounded-3xl shadow-2xl text-center max-w-md w-11/12 border-4 border-amber-300">
+                <p id="welcome-player-text" class="text-2xl font-black text-blue-700 mb-2">Chào con!</p>
+                <p class="text-gray-600 font-semibold mb-6 text-sm">Lắng nghe và điều khiển máy bay bắn đúng 20 từ vựng nhé.</p>
+                <button onclick="startGame()" class="w-full bg-amber-400 hover:bg-amber-500 text-blue-900 font-black py-4 rounded-full text-2xl shadow-[0_6px_0_#b45309] btn-hover cursor-pointer">
+                    🚀 BẮT ĐẦU CHƠI
+                </button>
+            </div>
+        </div>
+
+        <!-- Màn hình kết thúc & Bảng tổng điểm nhóm -->
+        <div id="end-screen" class="absolute inset-0 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center z-[100] hidden overflow-y-auto py-6 px-4">
+            <div class="text-5xl mb-1">🎉</div>
+            <h1 class="text-3xl font-black text-blue-700 mb-1">HOÀN THÀNH XUẤT SẮC!</h1>
+            <p class="text-lg font-bold text-gray-600 mb-3">Điểm của <span id="res-player-name" class="text-blue-600 font-extrabold"></span>: <span id="final-score" class="text-emerald-600 font-black text-xl">0</span></p>
+            
+            <!-- Bảng tổng điểm nhóm phong cách hiện đại -->
+            <div class="w-full max-w-md my-2 bg-sky-50 border-2 border-sky-200 rounded-2xl p-4 shadow-sm">
+                <h3 class="text-blue-800 font-black text-center text-base mb-2">🏆 BẢNG TỔNG ĐIỂM NHÓM</h3>
+                <div class="max-h-44 overflow-y-auto bg-white rounded-xl border border-sky-100 shadow-inner">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-sky-100 text-blue-900 font-bold text-xs sticky top-0">
+                                <th class="p-2.5">Hạng & Tên</th>
+                                <th class="p-2.5 text-center">Điểm số</th>
+                                <th class="p-2.5 text-right">Thời gian</th>
+                            </tr>
+                        </thead>
+                        <tbody id="session-leaderboard-tbody" class="text-xs font-semibold text-gray-700 divide-y divide-sky-50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-4">
+                <button onclick="document.getElementById('end-screen').classList.add('hidden'); goToNameScreen();" class="bg-amber-500 hover:bg-amber-600 text-white font-black py-2.5 px-5 rounded-xl text-base shadow-[0_4px_0_#b45309] btn-hover cursor-pointer">
+                    👤 BẠN KHÁC CHƠI
+                </button>
+                <button onclick="document.getElementById('end-screen').classList.add('hidden'); startGame();" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 px-5 rounded-xl text-base shadow-[0_4px_0_#1e3a8a] btn-hover cursor-pointer">
+                    🔄 CHƠI LẠI
+                </button>
+            </div>
+        </div>
+
+        <!-- UI Trạng thái trò chơi -->
+        <div class="absolute top-4 left-4 z-40">
+            <span class="text-xl font-black text-white bg-emerald-500 border-2 border-white px-4 py-1.5 rounded-xl shadow-md" id="score-display">⭐ 0</span>
+        </div>
+        
+        <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-40">
+            <span class="text-lg font-bold text-blue-900 bg-white/90 border-2 border-sky-300 px-5 py-1.5 rounded-full shadow-sm" id="progress-display">Từ: 1/20</span>
+        </div>
+
+        <div class="absolute top-4 right-4 z-40">
+            <button onclick="speakTarget()" class="bg-white hover:bg-sky-50 border-2 border-sky-300 rounded-full px-4 py-1.5 text-lg font-bold text-blue-800 transition-transform active:scale-95 shadow-sm flex items-center gap-1.5 cursor-pointer pointer-events-auto">
+                🔊 Nghe lại
+            </button>
+        </div>
+
+        <!-- MÁY BAY -->
+        <div id="plane" style="display: none;">✈️</div>
+    </div>
+
+    <script>
+        const fullVocabulary = [
+            "APPLE", "BANANA", "CAT", "DOG", "ELEPHANT", 
+            "FISH", "GRAPE", "HAT", "ICE", "JUICE", 
+            "KITE", "LION", "MONKEY", "NEST", "ORANGE", 
+            "PIG", "QUEEN", "RABBIT", "SUN", "TIGER", 
+            "UMBRELLA", "VAN", "WATER", "MOTHER", "FATHER",
+            "SCHOOL", "TEACHER", "BOOK", "PENCIL", "RULER"
+        ];
+
+        let playerName = "";
+        let score = 0;
+        let roundWords = []; 
+        let currentIndex = 0; 
+        let targetWord = "";
+        
+        let chickens = [];
+        let bullets = [];
+        let planeX = 405; 
+        let isGameOver = false;
+        let gameLoopId;
+        let isTransitioning = false; 
+
+        const allLanes = [90, 250, 410, 570, 730];
+        let freeLanes = [...allLanes];
+
+        const gameBoard = document.getElementById('game-board');
+        const planeEl = document.getElementById('plane');
+        const scoreEl = document.getElementById('score-display');
+        const progressEl = document.getElementById('progress-display');
+        const nameScreen = document.getElementById('name-screen');
+        const startScreen = document.getElementById('start-screen');
+        const endScreen = document.getElementById('end-screen');
+
+        function getValidHistory() {
+            const rawData = localStorage.getItem('planeGameSessionHistory');
+            if (!rawData) return [];
+            try {
+                const history = JSON.parse(rawData);
+                const now = new Date().getTime();
+                const TWO_HOURS = 2 * 60 * 60 * 1000;
+                const validHistory = history.filter(item => (now - item.timestamp) < TWO_HOURS);
+                if (validHistory.length !== history.length) {
+                    localStorage.setItem('planeGameSessionHistory', JSON.stringify(validHistory));
+                }
+                return validHistory;
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function goToStartScreen() {
+            const input = document.getElementById('player-name-input');
+            const name = input.value.trim();
+            const errorDiv = document.getElementById('name-error');
+
+            if (!name) {
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            playerName = name;
+            localStorage.setItem('planeGameLastPlayer', name);
+            errorDiv.classList.add('hidden');
+            nameScreen.style.display = 'none';
+            
+            document.getElementById('welcome-player-text').innerText = `Chào ${playerName} nhé!`;
+            startScreen.style.display = 'flex';
+        }
+
+        window.onload = function() {
+            const savedName = localStorage.getItem('planeGameLastPlayer');
+            if (savedName) {
+                document.getElementById('player-name-input').value = savedName;
+            }
+        };
+
+        gameBoard.addEventListener('mousemove', (e) => {
+            if (isGameOver || startScreen.style.display !== 'none' || nameScreen.style.display !== 'none') return;
+            const rect = gameBoard.getBoundingClientRect();
+            let x = e.clientX - rect.left - 40; 
+            if (x < 10) x = 10;
+            if (x > 810) x = 810;
+            planeX = x;
+            planeEl.style.left = planeX + 'px';
+        });
+
+        gameBoard.addEventListener('mousedown', () => {
+            if (isGameOver || startScreen.style.display !== 'none' || nameScreen.style.display !== 'none' || isTransitioning) return;
+            fireBullet();
+        });
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            planeEl.style.display = 'flex'; 
+            
+            score = 0;
+            currentIndex = 0;
+            isGameOver = false;
+            isTransitioning = false;
+            
+            let shuffled = [...fullVocabulary].sort(() => 0.5 - Math.random());
+            roundWords = shuffled.slice(0, 20);
+            
+            updateUI();
+            clearBoard();
+            loadNextWord();
+            
+            cancelAnimationFrame(gameLoopId);
+            gameLoop();
+        }
+
+        function loadNextWord() {
+            if (currentIndex >= 20) {
+                endGame();
+                return;
+            }
+            
+            targetWord = roundWords[currentIndex];
+            isTransitioning = false;
+            progressEl.innerText = `Từ: ${currentIndex + 1}/20`;
+            setTimeout(speakTarget, 300);
+        }
+
+        function speakTarget() {
+            if (!targetWord) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(targetWord);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8; 
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function spawnSingleChicken(forceWord = null) {
+            if (freeLanes.length === 0) return; 
+
+            let laneIndex = Math.floor(Math.random() * freeLanes.length);
+            let xPos = freeLanes[laneIndex];
+            freeLanes.splice(laneIndex, 1);
+
+            const chicken = document.createElement('div');
+            chicken.className = 'chicken';
+            chicken.innerText = '🐔'; 
+            
+            chicken.style.left = xPos + 'px';
+            let startY = -80 - (Math.random() * 150); 
+            chicken.style.top = startY + 'px';
+            
+            let word = forceWord || roundWords[Math.floor(Math.random() * roundWords.length)];
+            
+            const wordTag = document.createElement('div');
+            wordTag.className = 'word-tag';
+            wordTag.innerText = word;
+            chicken.appendChild(wordTag);
+            
+            gameBoard.appendChild(chicken);
+            
+            chickens.push({ 
+                element: chicken, 
+                word: word,
+                x: xPos,
+                y: startY, 
+                speed: Math.random() * 0.7 + 0.8,
+                lane: xPos 
+            });
+        }
+
+        function fireBullet() {
+            const bullet = document.createElement('div');
+            bullet.className = 'bullet';
+            bullet.style.left = (planeX + 40) + 'px'; 
+            bullet.style.bottom = '90px'; 
+            
+            gameBoard.appendChild(bullet);
+            bullets.push({
+                element: bullet,
+                x: planeX + 40,
+                y: 600 - 90, 
+                speed: 12
+            });
+        }
+
+        function createFeedback(text, x, y, color) {
+            const feedback = document.createElement('div');
+            feedback.className = 'feedback-text';
+            feedback.innerText = text;
+            feedback.style.left = (x - 20) + 'px';
+            feedback.style.top = y + 'px';
+            feedback.style.color = color;
+            gameBoard.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 1000);
+        }
+
+        function handleHit(hitChicken) {
+            isTransitioning = true; 
+            
+            if (hitChicken.word === targetWord) {
+                score += 5;
+                createFeedback("⭐ +5", hitChicken.x, hitChicken.y, "#10b981");
+            } else {
+                score = Math.max(0, score - 5);
+                createFeedback("❌ -5", hitChicken.x, hitChicken.y, "#ef4444");
+            }
+            
+            updateUI();
+            
+            setTimeout(() => {
+                clearBoard();
+                currentIndex++;
+                loadNextWord();
+            }, 600); 
+        }
+
+        function clearBoard() {
+            chickens.forEach(c => c.element && c.element.remove());
+            bullets.forEach(b => b.element && b.element.remove());
+            chickens = [];
+            bullets = [];
+            freeLanes = [...allLanes]; 
+        }
+
+        function updateUI() {
+            scoreEl.innerText = `⭐ ${score}`;
+        }
+
+        function endGame() {
+            isGameOver = true;
+            clearBoard();
+            planeEl.style.display = 'none';
+            
+            document.getElementById('res-player-name').innerText = playerName;
+            document.getElementById('final-score').innerText = score + " điểm";
+
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' (' + now.toLocaleDateString('vi-VN') + ')';
+            
+            let history = getValidHistory();
+            history.push({
+                name: playerName,
+                score: score,
+                timeStr: timeString,
+                timestamp: now.getTime()
+            });
+
+            history.sort((a, b) => b.score - a.score || a.timestamp - b.timestamp);
+            localStorage.setItem('planeGameSessionHistory', JSON.stringify(history));
+
+            renderSessionLeaderboard(history);
+            endScreen.classList.remove('hidden');
+        }
+
+        function renderSessionLeaderboard(historyData) {
+            const tbody = document.getElementById('session-leaderboard-tbody');
+            tbody.innerHTML = '';
+
+            if (historyData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-gray-400">Chưa có kết quả.</td></tr>`;
+                return;
+            }
+
+            historyData.forEach((item, index) => {
+                let rankIcon = `#${index + 1}`;
+                if (index === 0) rankIcon = '🥇';
+                else if (index === 1) rankIcon = '🥈';
+                else if (index === 2) rankIcon = '🥉';
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-sky-50";
+                tr.innerHTML = `
+                    <td class="p-2.5 font-bold text-blue-900">${rankIcon} ${item.name}</td>
+                    <td class="p-2.5 text-center text-emerald-600 font-black">${item.score} đ</td>
+                    <td class="p-2.5 text-right text-[11px] text-gray-500">${item.timeStr}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+
+            if (!isTransitioning) {
+                if (freeLanes.length > 0 && chickens.length < 5) {
+                    let targetExists = chickens.some(c => c.word === targetWord);
+                    if (!targetExists) {
+                        spawnSingleChicken(targetWord);
+                    } else {
+                        spawnSingleChicken();
+                    }
+                }
+            }
+
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.y -= b.speed;
+                b.element.style.top = b.y + 'px';
+                if (b.y < -20) {
+                    b.element.remove();
+                    bullets.splice(i, 1);
+                }
+            }
+
+            for (let i = chickens.length - 1; i >= 0; i--) {
+                let c = chickens[i];
+                if (c.destroyed) continue;
+
+                c.y += c.speed;
+                c.element.style.top = c.y + 'px';
+
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    let b = bullets[j];
+                    if (b.x > c.x - 20 && b.x < c.x + 80 && b.y < c.y + 70 && b.y > c.y) {
+                        
+                        b.element.remove();
+                        bullets.splice(j, 1);
+                        
+                        c.destroyed = true;
+                        c.element.innerText = '💥'; 
+                        
+                        let tag = c.element.querySelector('.word-tag');
+                        if(tag) tag.style.display = 'none';
+                        
+                        handleHit(c);
+                        break;
+                    }
+                }
+
+                if (c.y > 650) {
+                    c.element.remove();
+                    freeLanes.push(c.lane); 
+                    chickens.splice(i, 1);
+                }
+            }
+
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
