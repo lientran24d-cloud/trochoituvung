@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Little Garden Words – Bé nhổ củ cải luyện nghe từ vựng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(to bottom, #87ceeb, #e0f2fe);
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .screen.active {
+            display: flex;
+        }
+        @keyframes bounceGentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-bounce-gentle {
+            animation: bounceGentle 2s infinite ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .shake-anim {
+            animation: shake 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen overflow-hidden relative">
+
+    <script>
+        const vocabulary = [
+            { word: "mother", meaning: "Mẹ", emoji: "👩" },
+            { word: "father", meaning: "Bố", emoji: "👨" },
+            { word: "brother", meaning: "Anh/Em trai", emoji: "👦" },
+            { word: "sister", meaning: "Chị/Em gái", emoji: "👧" },
+            { word: "school", meaning: "Trường học", emoji: "🏫" },
+            { word: "teacher", meaning: "Giáo viên", emoji: "👩‍🏫" },
+            { word: "desk", meaning: "Bàn học", emoji: "🪑" },
+            { word: "chair", meaning: "Cái ghế", emoji: "🪑" },
+            { word: "book", meaning: "Quyển sách", emoji: "📖" },
+            { word: "pen", meaning: "Cái bút", emoji: "🖊️" },
+            { word: "pencil", meaning: "Bút chì", emoji: "✏️" },
+            { word: "ruler", meaning: "Thước kẻ", emoji: "📏" },
+            { word: "apple", meaning: "Quả táo", emoji: "🍎" },
+            { word: "banana", meaning: "Quả chuối", emoji: "🍌" },
+            { word: "cat", meaning: "Con mèo", emoji: "🐱" },
+            { word: "dog", meaning: "Con chó", emoji: "🐶" }
+        ];
+
+        const gameState = {
+            playerName: "",
+            score: 0,
+            currentIndex: 0,
+            totalRounds: 10,
+            roundWords: [],
+            currentTarget: null,
+            hasMadeMistakeInCurrentWord: false, // Theo dõi xem từ này đã làm sai lần nào chưa
+            soundEnabled: true
+        };
+
+        function getValidHistory() {
+            const rawData = localStorage.getItem('gardenSessionHistory');
+            if (!rawData) return [];
+            try {
+                const history = JSON.parse(rawData);
+                const now = new Date().getTime();
+                const TWO_HOURS = 2 * 60 * 60 * 1000;
+                return history.filter(item => (now - item.timestamp) < TWO_HOURS);
+            } catch (e) {
+                return [];
+            }
+        }
+    </script>
+
+    <!-- 1. MÀN HÌNH CHÀO -->
+    <div id="welcome-screen" class="screen active bg-gradient-to-b from-sky-300 to-emerald-200">
+        <div class="absolute top-4 right-4">
+            <button onclick="toggleSound()" id="sound-btn" class="bg-white/80 p-3 rounded-full text-2xl shadow-md">🔊</button>
+        </div>
+        <div class="text-center z-10 max-w-md px-4">
+            <div class="text-6xl mb-2">☀️</div>
+            <h1 class="text-4xl md:text-5xl font-black text-emerald-700 drop-shadow-md mb-1">LITTLE GARDEN</h1>
+            <h2 class="text-2xl md:text-3xl font-bold text-amber-600 drop-shadow mb-4">WORDS</h2>
+            <p class="text-lg font-bold text-emerald-800 bg-white/60 py-2 px-6 rounded-full inline-block shadow-sm mb-6">🌱 Bé nhổ củ cải – Luyện nghe từ vựng! 🌱</p>
+            
+            <div class="text-8xl mb-6 animate-bounce-gentle">👧🏻🥕</div>
+
+            <div class="flex flex-col gap-3 w-full">
+                <button onclick="goToNameScreen()" class="bg-amber-500 hover:bg-amber-400 text-white font-black text-2xl py-4 px-8 rounded-3xl shadow-[0_6px_0_#b45309] active:translate-y-1 transition-all">
+                    ▶ BẮT ĐẦU CHƠI
+                </button>
+                <button onclick="goToHistoryScreen()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xl py-3 px-6 rounded-3xl shadow-[0_4px_0_#065f46] active:translate-y-1 transition-all">
+                    🏆 BẢNG TỔNG ĐIỂM NHÓM
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MÀN HÌNH NHẬP TÊN -->
+    <div id="name-screen" class="screen bg-gradient-to-b from-emerald-200 to-teal-300">
+        <div class="bg-white/95 border-4 border-emerald-500 rounded-3xl p-8 max-w-md w-11/12 text-center shadow-xl z-10">
+            <div class="text-5xl mb-2">👋</div>
+            <h2 class="text-2xl font-black text-emerald-800 mb-2">Chào bạn nhỏ!</h2>
+            <p class="text-gray-600 font-semibold mb-4">Tên của em là gì nhỉ?</p>
+            
+            <input type="text" id="player-name-input" placeholder="Nhập tên của em..." 
+                class="w-full text-center text-2xl font-bold py-3 px-4 border-4 border-amber-400 rounded-2xl focus:outline-none focus:border-emerald-500 mb-4 text-gray-700 shadow-inner"
+                maxlength="15">
+            
+            <div id="name-error" class="text-red-500 font-bold mb-3 hidden">🌱 Em hãy nhập tên trước nhé!</div>
+
+            <button onclick="submitName()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black text-2xl py-3 rounded-2xl shadow-[0_5px_0_#047857] active:translate-y-1 transition-all">
+                🌱 VÀO VƯỜN NGAY
+            </button>
+            <button onclick="showScreen('welcome-screen')" class="mt-4 text-gray-500 font-bold text-sm">← Quay lại</button>
+        </div>
+    </div>
+
+    <!-- 3. MÀN HÌNH CHƠI GAME -->
+    <div id="game-screen" class="screen bg-gradient-to-b from-sky-300 via-emerald-100 to-emerald-400 justify-between py-3 px-2">
+        <!-- TOP BAR -->
+        <div class="w-full max-w-3xl flex justify-between items-center bg-white/90 border-2 border-emerald-400 rounded-2xl px-4 py-2 shadow-md z-20">
+            <div class="flex items-center gap-2 font-black text-emerald-800 text-lg">
+                <span>👧🏻</span> <span id="ui-name">Bé</span>
+            </div>
+            <div class="flex items-center gap-2 font-black text-amber-600 text-xl">
+                <span>⭐</span> <span id="ui-score">0</span>
+            </div>
+            <div class="flex items-center gap-2 font-black text-teal-700 text-base">
+                <span>🌱 Từ:</span> <span id="ui-progress">1/10</span>
+            </div>
+            <button onclick="if(confirm('Về trang chủ?')) showScreen('welcome-screen');" class="text-xl font-bold">🏠</button>
+        </div>
+
+        <!-- TARGET BOARD -->
+        <div class="w-full max-w-md bg-white/95 border-4 border-amber-400 rounded-3xl p-4 text-center shadow-xl z-20 mx-auto mt-2">
+            <div class="text-gray-400 font-bold text-xs tracking-widest mb-2">🎧 BÉ HÃY LẮNG NGHE VÀ TÌM TỪ NÀY</div>
+            <div class="flex items-center justify-center gap-4">
+                <span id="target-emoji" class="text-6xl">🍎</span>
+                <button onclick="speakTarget()" class="bg-amber-100 hover:bg-amber-200 border-4 border-amber-400 px-6 py-3 rounded-full text-2xl font-bold text-amber-800 shadow active:scale-95 transition-all flex items-center gap-2">
+                    <span>🔊</span> NGHE TỪ NÀY
+                </button>
+            </div>
+        </div>
+
+        <!-- KHU VƯỜN CỦ CẢI -->
+        <div class="relative w-full max-w-3xl flex-1 my-3 bg-emerald-600/20 border-4 border-emerald-600/40 rounded-3xl overflow-hidden flex flex-col justify-center items-center shadow-inner">
+            <div class="absolute top-2 left-6 text-2xl opacity-60">☁️</div>
+            <div class="absolute top-4 right-10 text-3xl opacity-60">☁️</div>
+
+            <div id="radish-grid" class="grid grid-cols-2 md:grid-cols-3 gap-6 p-4 z-10 w-full max-w-xl justify-items-center items-center"></div>
+
+            <div class="absolute bottom-2 right-4 text-6xl animate-bounce-gentle z-20 pointer-events-none">
+                👧🏻🌱
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. MÀN HÌNH KẾT QUẢ & BẢNG XẾP HẠNG NHÓM -->
+    <div id="result-screen" class="screen bg-gradient-to-b from-amber-200 to-emerald-300 py-6 overflow-y-auto">
+        <div class="bg-white/95 border-4 border-amber-500 rounded-3xl p-5 max-w-lg w-11/12 shadow-2xl z-10 flex flex-col my-auto">
+            <div class="text-center">
+                <div class="text-5xl mb-1">🎉</div>
+                <h2 id="result-name" class="text-2xl font-black text-emerald-800 mb-1">XUẤT SẮC!</h2>
+                <p class="text-amber-600 font-bold text-base mb-2">Điểm của <span id="res-player-label">Bé</span>: <span id="final-score" class="text-amber-600 font-black text-xl">50 / 50</span></p>
+            </div>
+
+            <div class="my-3">
+                <h3 class="text-teal-800 font-black text-center text-lg mb-2">🏆 BẢNG TỔNG ĐIỂM NHÓM</h3>
+                <div class="max-h-40 overflow-y-auto border-2 border-teal-100 rounded-xl">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-teal-100 text-teal-900 font-bold text-xs sticky top-0">
+                                <th class="p-2">Hạng & Tên</th>
+                                <th class="p-2 text-center">Điểm số</th>
+                                <th class="p-2 text-right">Lúc chơi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="session-leaderboard-tbody" class="text-xs font-semibold text-gray-700 divide-y divide-teal-50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-2">
+                <button onclick="startNewGame()" class="bg-amber-500 hover:bg-amber-400 text-white font-black text-lg py-2.5 rounded-2xl shadow-[0_4px_0_#b45309]">
+                    🔄 BẠN KHÁC CHƠI TIẾP
+                </button>
+                <button onclick="showScreen('welcome-screen')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base py-2.5 rounded-2xl shadow-[0_4px_0_#065f46]">
+                    🏠 VỀ TRANG CHỦ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. MÀN HÌNH LỊCH SỬ KẾT QUẢ TỔNG HỢP -->
+    <div id="history-screen" class="screen bg-gradient-to-b from-teal-200 to-emerald-300 py-6">
+        <div class="bg-white/95 border-4 border-teal-500 rounded-3xl p-6 max-w-lg w-11/12 shadow-2xl flex flex-col max-h-[85vh]">
+            <h2 class="text-2xl font-black text-teal-800 mb-2 text-center">🏆 BẢNG TỔNG ĐIỂM (LƯU 2 TIẾNG)</h2>
+            <p class="text-xs text-center text-gray-500 mb-4">Danh sách sẽ tự động làm mới sau 2 tiếng không hoạt động.</p>
+            
+            <div class="flex-1 overflow-y-auto border-2 border-teal-100 rounded-xl mb-4">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-teal-100 text-teal-900 font-bold text-sm sticky top-0">
+                            <th class="p-2">Học sinh</th>
+                            <th class="p-2 text-center">Điểm số</th>
+                            <th class="p-2 text-right">Thời gian chơi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody" class="text-sm font-semibold text-gray-700 divide-y divide-teal-50"></tbody>
+                </table>
+            </div>
+
+            <button onclick="showScreen('welcome-screen')" class="bg-teal-600 hover:bg-teal-500 text-white font-bold text-lg py-3 rounded-2xl text-center shadow">
+                ← VỀ TRANG CHỦ
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT CONTROLLER -->
+    <script>
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            document.getElementById('sound-btn').innerText = gameState.soundEnabled ? '🔊' : '🔇';
+        }
+
+        function speakText(text) {
+            if (!gameState.soundEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakTarget() {
+            if (gameState.currentTarget) speakText(gameState.currentTarget.word);
+        }
+
+        function goToNameScreen() {
+            const saved = localStorage.getItem('gardenPlayer') || '';
+            document.getElementById('player-name-input').value = saved;
+            document.getElementById('name-error').classList.add('hidden');
+            showScreen('name-screen');
+        }
+
+        function submitName() {
+            const name = document.getElementById('player-name-input').value.trim();
+            if (!name) {
+                document.getElementById('name-error').classList.remove('hidden');
+                return;
+            }
+            gameState.playerName = name;
+            localStorage.setItem('gardenPlayer', name);
+            startNewGame();
+        }
+
+        function startNewGame() {
+            if (!gameState.playerName) {
+                goToNameScreen();
+                return;
+            }
+            gameState.score = 0;
+            gameState.currentIndex = 0;
+            gameState.roundWords = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, gameState.totalRounds);
+            
+            document.getElementById('ui-name').innerText = gameState.playerName;
+            showScreen('game-screen');
+            loadRound();
+        }
+
+        function loadRound() {
+            if (gameState.currentIndex >= gameState.totalRounds) {
+                endGame();
+                return;
+            }
+
+            gameState.currentTarget = gameState.roundWords[gameState.currentIndex];
+            gameState.hasMadeMistakeInCurrentWord = false; // Reset trạng thái lỗi cho từ mới
+            
+            document.getElementById('ui-score').innerText = gameState.score;
+            document.getElementById('ui-progress').innerText = `${gameState.currentIndex + 1}/${gameState.totalRounds}`;
+            document.getElementById('target-emoji').innerText = gameState.currentTarget.emoji;
+
+            let distractors = vocabulary.filter(v => v.word !== gameState.currentTarget.word)
+                                        .sort(() => 0.5 - Math.random())
+                                        .slice(0, 5);
+            
+            let choices = [...distractors, gameState.currentTarget].sort(() => 0.5 - Math.random());
+            renderRadishes(choices);
+            speakTarget();
+        }
+
+        function renderRadishes(choices) {
+            const grid = document.getElementById('radish-grid');
+            grid.innerHTML = '';
+
+            choices.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = "flex flex-col items-center cursor-pointer transition-transform hover:scale-110 active:scale-95 bg-white/90 border-4 border-amber-300 rounded-2xl p-4 shadow-md w-full";
+                card.onclick = () => selectRadish(item, card);
+
+                card.innerHTML = `
+                    <div class="text-2xl md:text-3xl font-black text-emerald-800 uppercase tracking-wide mb-2">${item.word}</div>
+                    <div class="text-4xl select-none filter drop-shadow">🌱🥕</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function selectRadish(selectedItem, cardElement) {
+            if (cardElement.classList.contains('pulled')) return;
+            
+            if (selectedItem.word === gameState.currentTarget.word) {
+                // NHỔ ĐÚNG
+                cardElement.classList.add('pulled');
+                
+                // Kiểm tra xem từ này trước đó đã làm sai lần nào chưa
+                if (!gameState.hasMadeMistakeInCurrentWord) {
+                    gameState.score += 5; // Chỉ cộng điểm nếu không làm sai lần nào
+                }
+                // Nếu đã làm sai rồi thì không cộng điểm nhưng vẫn cho qua từ tiếp theo
+                
+                speakText("Great job!");
+                
+                setTimeout(() => {
+                    gameState.currentIndex++;
+                    loadRound();
+                }, 700);
+            } else {
+                // NHỔ SAI: Bị trừ điểm (tối thiểu về 0), ghi nhận lỗi và bắt buộc tìm tiếp từ đúng
+                gameState.hasMadeMistakeInCurrentWord = true;
+                gameState.score = Math.max(0, gameState.score - 2);
+                document.getElementById('ui-score').innerText = gameState.score;
+
+                cardElement.classList.add('pulled', 'opacity-30', 'pointer-events-none'); // Làm biến mất củ cải sai
+                speakText("Try again");
+            }
+        }
+
+        function endGame() {
+            const finalScore = gameState.score;
+            document.getElementById('final-score').innerText = `${finalScore} / 50`;
+            document.getElementById('res-player-label').innerText = gameState.playerName;
+            document.getElementById('result-name').innerText = `XUẤT SẮC, ${gameState.playerName.toUpperCase()}!`;
+            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' (' + now.toLocaleDateString('vi-VN') + ')';
+            
+            let history = getValidHistory();
+            history.push({
+                name: gameState.playerName,
+                score: finalScore,
+                timeStr: timeString,
+                timestamp: now.getTime()
+            });
+            
+            history.sort((a, b) => b.score - a.score || a.timestamp - b.timestamp);
+            localStorage.setItem('gardenSessionHistory', JSON.stringify(history));
+
+            renderSessionLeaderboard(history);
+            showScreen('result-screen');
+        }
+
+        function renderSessionLeaderboard(historyData) {
+            const tbody = document.getElementById('session-leaderboard-tbody');
+            tbody.innerHTML = '';
+
+            if (historyData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-gray-400">Chưa có kết quả.</td></tr>`;
+                return;
+            }
+
+            historyData.forEach((item, index) => {
+                let rankIcon = `#${index + 1}`;
+                if (index === 0) rankIcon = '🥇';
+                else if (index === 1) rankIcon = '🥈';
+                else if (index === 2) rankIcon = '🥉';
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-teal-50";
+                tr.innerHTML = `
+                    <td class="p-2 font-bold text-teal-900">${rankIcon} ${item.name}</td>
+                    <td class="p-2 text-center text-amber-600 font-black">${item.score} đ</td>
+                    <td class="p-2 text-right text-[10px] text-gray-500">${item.timeStr}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function goToHistoryScreen() {
+            const history = getValidHistory();
+            history.sort((a, b) => b.score - a.score || a.timestamp - b.timestamp);
+            
+            const tbody = document.getElementById('history-tbody');
+            tbody.innerHTML = '';
+
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-400">Không có dữ liệu (hoặc đã quá 2 tiếng tự động xóa).</td></tr>`;
+            } else {
+                history.forEach((item, index) => {
+                    let rankIcon = `#${index + 1}`;
+                    if (index === 0) rankIcon = '🥇';
+                    else if (index === 1) rankIcon = '🥈';
+                    else if (index === 2) rankIcon = '🥉';
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-teal-50">
+                            <td class="p-2 font-bold text-teal-900">${rankIcon} ${item.name}</td>
+                            <td class="p-2 text-center text-amber-600 font-black">${item.score} đ</td>
+                            <td class="p-2 text-right text-xs text-gray-500">${item.timeStr}</td>
+                        </tr>`;
+                });
+            }
+            showScreen('history-screen');
+        }
+    </script>
+</body>
+</html>
